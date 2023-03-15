@@ -1,4 +1,6 @@
 let json_url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+let tectonicCsv = "../../resources/PB2002_steps.csv"
+
 
 d3.json(json_url).then(data => {
     console.log("features",data.features)
@@ -9,8 +11,8 @@ d3.json(json_url).then(data => {
     console.log("marker size ", markerSize(data.features[0].properties.mag))
 })
 
-// const markerSize = mag =>  Math.sqrt(mag) * 7
 const markerSize = mag =>  Math.abs(mag) * 4
+
 let heatColors = ['#a3f600', '#dcf400', '#f7db11', '#fdb72a', '#fca35d', '#ff5f65']
 let markerColor = depth => {
     return depth > 90 ? heatColors[5] :
@@ -22,26 +24,28 @@ let markerColor = depth => {
 
 d3.json(json_url).then(data => {
     createFeatures(data.features)
-
     console.log("all features--", data.features)
     for (let i=0; i<data.features.length; i++){
-    // console.log("all depth--", data.features)
-    if (data.features[i].properties.mag <= 0) {
-        console.log(data.features[i].properties.mag)
+        if (data.features[i].properties.mag <= 0) {
+            console.log(data.features[i].properties.mag)
+            }
     }
-
-    // console.log("all depth--", data.features[i].geometry.coordinates[2])
-
-    }
-
 })
 
 const createFeatures = data => {
     const onEachFeature = (feature, layer) => {
         layer.bindPopup(`<h3>${feature.properties.place}</h3>
+                        <hr>
                         <table>
                             <tr>
+                                <th>Longitude:</th><td>${feature.geometry.coordinates[0]}</td>        
+                            </tr>
+                            <tr>
+                                <th>Latitude:</th><td>${feature.geometry.coordinates[1]}</td>
+                            </tr>
+                            <tr>
                                 <th>Magnitude:</th><td>${markerSize(feature.properties.mag)}</td>
+                            </tr>
                             <tr>
                                 <th>Depth:</th><td>${feature.geometry.coordinates[2]}</td>
                             </tr>
@@ -61,12 +65,9 @@ const createFeatures = data => {
         }
     });
 
-    let tectonic = L.geoJSON(data, {
-        pass
-    })
 
   // Send our earthquakes layer to the createMap function/
-  createMap(earthquakes, tectonic);
+  createMap(earthquakes);
 }
 
 
@@ -74,41 +75,35 @@ const createMap = (earthquakes, tectonic) => {
     let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     })
-
-    let topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-    });
-    let grayscale = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
-	attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and NPS',
-	maxZoom: 13
-    });
+    let grayscale = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    })
     let satellite = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}', {
 	maxZoom: 20,
 	attribution: 'Tiles courtesy of the <a href="https://usgs.gov/">U.S. Geological Survey</a>'
-    });
+    })
 
 
 
-      // Create a baseMaps object.
+    // Create a baseMaps object.
     let baseMaps = {
         Satellite: satellite,
         Grayscale: grayscale,
         Outdoors: street,
-
-
     };
 
     // Create an overlay object to hold our overlay.
     let overlayMaps = {
         Earthquakes: earthquakes,
-        // Tectonic : tectonic
     };
     
     // Create our map, giving it the streetmap and earthquakes layers to display on load.
     let myMap = L.map("map", {
         center: [39.7392, -104.9903],
         zoom: 5,
-        layers: [street, earthquakes] //tectonic]
+        layers: [grayscale, earthquakes]
     })
 
 
@@ -116,16 +111,12 @@ const createMap = (earthquakes, tectonic) => {
     let legend = L.control({ position: "bottomright" });
     legend.onAdd = () => {
         let div = L.DomUtil.create("div", "info legend");
-        let scales = {
-            "-10-10" : heatColors[0],
-            "10-30" : heatColors[1],
-            "30-50" : heatColors[2],
-             "50-70" : heatColors[3], 
-             "70-90" : heatColors[4], 
-             "90+" : heatColors[5]
-        };
+        rng = [-10, 10, 30, 50, 70, 90]
+        scales = {}
+        for (let i = 0; i < rng.length; i++) {
+            scales[`${rng[i]}${rng[i+1] ? '-'+rng[i+1] : '+'}`] = heatColors[i]
+        }
         let labels = [];
-
         Object.keys(scales).forEach(key => {
             labels.push(`<tr> <th style="background:${scales[key]}"></th> <td>&nbsp;&nbsp;</td> <td>${key}</td> </tr>`)
         });
