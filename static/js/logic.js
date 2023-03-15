@@ -1,5 +1,5 @@
-let json_url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
-let tectonicCsv = "../../resources/PB2002_steps.csv"
+const json_url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+// let tectonicCsv = "../../resources/PB2002_steps.csv"
 
 
 d3.json(json_url).then(data => {
@@ -13,8 +13,8 @@ d3.json(json_url).then(data => {
 
 const markerSize = mag =>  Math.abs(mag) * 4
 
-let heatColors = ['#a3f600', '#dcf400', '#f7db11', '#fdb72a', '#fca35d', '#ff5f65']
-let markerColor = depth => {
+const heatColors = ['#a3f600', '#dcf400', '#f7db11', '#fdb72a', '#fca35d', '#ff5f65']
+const markerColor = depth => {
     return depth > 90 ? heatColors[5] :
            depth > 70 ? heatColors[4] :
            depth > 50 ? heatColors[3] :
@@ -85,8 +85,6 @@ const createMap = (earthquakes, tectonic) => {
 	attribution: 'Tiles courtesy of the <a href="https://usgs.gov/">U.S. Geological Survey</a>'
     })
 
-
-
     // Create a baseMaps object.
     let baseMaps = {
         Satellite: satellite,
@@ -111,14 +109,14 @@ const createMap = (earthquakes, tectonic) => {
     let legend = L.control({ position: "bottomright" });
     legend.onAdd = () => {
         let div = L.DomUtil.create("div", "info legend");
-        rng = [-10, 10, 30, 50, 70, 90]
-        scales = {}
-        for (let i = 0; i < rng.length; i++) {
-            scales[`${rng[i]}${rng[i+1] ? '-'+rng[i+1] : '+'}`] = heatColors[i]
+        legendScale = [-10, 10, 30, 50, 70, 90]
+        scaleObject = {}
+        for (let i = 0; i < legendScale.length; i++) {
+            scaleObject[`${legendScale[i]}${legendScale[i+1] ? '-'+legendScale[i+1] : '+'}`] = heatColors[i]
         }
         let labels = [];
-        Object.keys(scales).forEach(key => {
-            labels.push(`<tr> <th style="background:${scales[key]}"></th> <td>&nbsp;&nbsp;</td> <td>${key}</td> </tr>`)
+        Object.keys(scaleObject).forEach(key => {
+            labels.push(`<tr> <th style="background:${scaleObject[key]}"></th> <td>&nbsp;&nbsp;</td> <td>${key}</td> </tr>`)
         });
         div.innerHTML+= `<table> ${labels.join("")} </table>`
         
